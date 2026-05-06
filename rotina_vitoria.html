@@ -70,6 +70,29 @@
   .aerobico-box{background:#f9fafb;border-radius:8px;padding:12px;margin-top:8px}
   .aerobico-box p{font-size:13px;font-weight:500;margin-bottom:4px}
   .aerobico-box span{font-size:12px;color:#6b7280}
+  .cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+  .cal-header span{text-align:center;font-size:11px;font-weight:500;color:#6b7280;padding:4px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:1.5rem}
+  .cal-day{border-radius:8px;border:1px solid #e5e7eb;padding:6px 4px;text-align:center;min-height:52px;background:#fff}
+  .cal-day.empty{background:transparent;border-color:transparent}
+  .cal-day.today{border-color:#6366f1}
+  .cal-num{font-size:12px;font-weight:500;color:#374151}
+  .cal-day.today .cal-num{color:#4338ca;font-weight:700}
+  .cal-tipo{font-size:9px;margin-top:3px;padding:2px 4px;border-radius:4px;font-weight:500}
+  .cal-tipo.superior{background:#eef2ff;color:#4338ca}
+  .cal-tipo.inferior{background:#fff7ed;color:#c2410c}
+  .cal-tipo.aerobico{background:#eff6ff;color:#1d4ed8}
+  .cal-tipo.descanso{background:#f3f4f6;color:#9ca3af}
+  .leg-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem}
+  .leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#6b7280}
+  .leg-dot{width:10px;height:10px;border-radius:3px}
+  .sug-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.75rem}
+  .sug-head{display:flex;align-items:center;gap:10px;margin-bottom:.75rem}
+  .sug-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px}
+  .sug-dias{font-size:11px;color:#9ca3af}
+  .sug-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:12px}
+  .sug-item:last-child{border-bottom:none}
+  .sug-tag{font-size:10px;font-weight:500;background:#f3f4f6;color:#6b7280;padding:2px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}
   @media(max-width:500px){.day-grid{grid-template-columns:repeat(7,1fr)}.day-card .day-treino{display:none}}
 </style>
 </head>
@@ -85,6 +108,8 @@
   <button class="tab" onclick="switchTab('estudos')">Estudos</button>
   <button class="tab" onclick="switchTab('habitos')">Hábitos</button>
   <button class="tab" onclick="switchTab('semana')">Semana</button>
+  <button class="tab" onclick="switchTab('mes')">Mês</button>
+  <button class="tab" onclick="switchTab('sugestoes')">Sugestões</button>
 </div>
 
 <div id="tab-treino" class="section active">
@@ -112,6 +137,25 @@
   </div>
   <p class="section-label">Dias da semana</p>
   <div class="week-row" id="week-row"></div>
+</div>
+
+<div id="tab-mes" class="section">
+  <p class="section-label">Planejamento mensal</p>
+  <div class="leg-row">
+    <div class="leg-item"><div class="leg-dot" style="background:#eef2ff;border:1px solid #a5b4fc"></div>Superior</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#fff7ed;border:1px solid #fdba74"></div>Inferior</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#eff6ff;border:1px solid #93c5fd"></div>Aeróbico</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#f3f4f6;border:1px solid #d1d5db"></div>Descanso</div>
+  </div>
+  <div class="cal-header">
+    <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<div id="tab-sugestoes" class="section">
+  <p class="section-label">Sugestões de estudo</p>
+  <div id="sugestoes-content"></div>
 </div>
 
 <script>
@@ -225,15 +269,15 @@ let state={
 const todayIdx=new Date().getDay()===0?6:new Date().getDay()-1;
 
 function switchTab(t){
-  document.querySelectorAll('.tab').forEach((b,i)=>{
-    const tabs=['treino','estudos','habitos','semana'];
-    b.classList.toggle('active',tabs[i]===t);
-  });
+  const tabs=['treino','estudos','habitos','semana','mes','sugestoes'];
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',tabs[i]===t));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   if(t==='estudos') buildEstudos();
   if(t==='habitos') buildHabitos();
   if(t==='semana') updateSummary();
+  if(t==='mes') buildMes();
+  if(t==='sugestoes') buildSugestoes();
 }
 
 function buildDayGrid(){
@@ -353,6 +397,81 @@ function updateSummary(){
     const isToday=i===todayIdx;
     return `<div class="week-dot${done?' done':''}${isToday&&!done?' today':''}">${d.nome}</div>`;
   }).join('');
+}
+
+function buildMes(){
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth();
+  const firstDay=new Date(year,month,1).getDay();
+  const totalDays=new Date(year,month+1,0).getDate();
+  const startOffset=firstDay===0?6:firstDay-1;
+  const g=document.getElementById('cal-grid');
+  let html='';
+  for(let i=0;i<startOffset;i++) html+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=totalDays;d++){
+    const jsDay=new Date(year,month,d).getDay();
+    const idx=jsDay===0?6:jsDay-1;
+    const tipo=dias[idx].tipo;
+    const label=dias[idx].tipo==='descanso'?'Desc':dias[idx].tipo==='aerobico'?'Aer':dias[idx].tipo==='superior'?'Sup':'Inf';
+    const isToday=d===now.getDate();
+    html+=`<div class="cal-day${isToday?' today':''}">
+      <div class="cal-num">${d}</div>
+      <div class="cal-tipo ${tipo}">${label}</div>
+    </div>`;
+  }
+  g.innerHTML=html;
+}
+
+const sugestoesData=[
+  {mat:'Inglês',badge:'badge-en',dias:'Seg e Qui',itens:[
+    {tag:'App',txt:'Duolingo — 15 min diários, manter sequência'},
+    {tag:'Podcast',txt:'6 Minute English (BBC) — episódio por semana'},
+    {tag:'Série',txt:'Friends ou The Office com legenda em inglês'},
+    {tag:'YouTube',txt:'EnglishClass101 — vocabulário e conversação'},
+    {tag:'Prática',txt:'Escrever 5 frases do dia em inglês no caderno'},
+  ]},
+  {mat:'Espanhol',badge:'badge-es',dias:'Ter e Sex',itens:[
+    {tag:'App',txt:'Duolingo — 15 min diários'},
+    {tag:'Podcast',txt:'Coffee Break Spanish — para iniciantes e intermediários'},
+    {tag:'Série',txt:'La Casa de Papel ou Club de Cuervos (Netflix)'},
+    {tag:'YouTube',txt:'Dreaming Spanish — imersão com conteúdo visual'},
+    {tag:'Prática',txt:'Conversar com assistente de voz em espanhol'},
+  ]},
+  {mat:'História',badge:'badge-hist',dias:'Qui',itens:[
+    {tag:'Livro',txt:'Sapiens — Yuval Noah Harari (leitura progressiva)'},
+    {tag:'YouTube',txt:'Nerdologia — história e ciência de forma acessível'},
+    {tag:'Doc',txt:'Documentários Netflix: "History 101", "Ancient Civilizations"'},
+    {tag:'Podcast',txt:'Escriba Café — história do Brasil e mundo'},
+    {tag:'Resumo',txt:'Fazer mapa mental de cada conteúdo estudado'},
+  ]},
+  {mat:'Geografia',badge:'badge-hist',dias:'Sex',itens:[
+    {tag:'Livro',txt:'Atlas Geográfico Escolar — revisão por regiões'},
+    {tag:'YouTube',txt:'Geobrasil — canais de geografia para vestibular'},
+    {tag:'App',txt:'Seterra — jogo de mapas e capitais do mundo'},
+    {tag:'Doc',txt:'Documentários National Geographic (Disney+)'},
+    {tag:'Prática',txt:'Estudar uma região do mundo por semana'},
+  ]},
+  {mat:'Filosofia',badge:'badge-fil',dias:'Sáb',itens:[
+    {tag:'Livro',txt:'O Mundo de Sofia — Jostein Gaarder (introdução ideal)'},
+    {tag:'Podcast',txt:'Philosophize This! — história da filosofia ocidental'},
+    {tag:'YouTube',txt:'Fil&Fil — filosofia em português, linguagem clara'},
+    {tag:'Prática',txt:'Escrever uma reflexão semanal sobre um tema filosófico'},
+    {tag:'Extra',txt:'Ler um texto curto de um filósofo por mês'},
+  ]},
+];
+
+function buildSugestoes(){
+  const c=document.getElementById('sugestoes-content');
+  c.innerHTML=sugestoesData.map(s=>`
+    <div class="sug-card">
+      <div class="sug-head">
+        <span class="estudo-badge ${s.badge}">${s.mat}</span>
+        <span class="sug-dias">📅 ${s.dias}</span>
+      </div>
+      ${s.itens.map(it=>`<div class="sug-item"><span class="sug-tag">${it.tag}</span><span>${it.txt}</span></div>`).join('')}
+    </div>
+  `).join('');
 }
 
 const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
