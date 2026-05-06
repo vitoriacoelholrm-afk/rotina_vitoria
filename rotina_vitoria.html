@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotina — Vitória</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;background:#f5f5f5;color:#1a1a1a;padding:16px;max-width:700px;margin:0 auto}
+  h1{font-size:20px;font-weight:500;margin-bottom:4px}
+  .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+  .top-bar span{font-size:13px;color:#666}
+  .tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+  .tab{padding:7px 16px;border-radius:8px;border:1px solid #ddd;font-size:13px;cursor:pointer;background:#fff;color:#666;transition:all .15s}
+  .tab.active{background:#eef2ff;color:#3730a3;font-weight:500;border-color:#a5b4fc}
+  .section{display:none}
+  .section.active{display:block}
+  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1.5rem}
+  .day-card{padding:10px 4px;border-radius:8px;border:1px solid #e5e7eb;text-align:center;cursor:pointer;background:#fff;transition:all .15s}
+  .day-card:hover{border-color:#a5b4fc;background:#eef2ff}
+  .day-card.active{border-color:#6366f1;background:#eef2ff}
+  .day-card .day-name{font-size:12px;font-weight:500;color:#6b7280}
+  .day-card.active .day-name{color:#4338ca}
+  .day-card .day-treino{font-size:10px;color:#9ca3af;margin-top:3px}
+  .day-card.active .day-treino{color:#6366f1}
+  .done-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;margin:4px auto 0;display:none}
+  .day-card.done .done-dot{display:block}
+  .treino-box{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+  .treino-title{font-size:15px;font-weight:500;margin-bottom:4px}
+  .treino-sub{font-size:12px;color:#6b7280;margin-bottom:1rem}
+  .ex-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;cursor:pointer}
+  .ex-item:last-child{border-bottom:none}
+  .ex-check{width:18px;height:18px;border-radius:4px;border:1px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px;background:#fff;transition:all .15s;font-size:11px}
+  .ex-check.checked{background:#dcfce7;border-color:#86efac;color:#16a34a}
+  .ex-info{flex:1}
+  .ex-name{font-size:13px;line-height:1.4}
+  .ex-detail{font-size:11px;color:#9ca3af;margin-top:2px}
+  .ex-item.checked .ex-name{color:#9ca3af;text-decoration:line-through}
+  .progress-label{font-size:12px;color:#6b7280;margin-bottom:6px}
+  .progress-bar-wrap{background:#f3f4f6;border-radius:4px;height:6px;margin-bottom:1rem;overflow:hidden}
+  .progress-bar{height:6px;border-radius:4px;background:#22c55e;transition:width .3s}
+  .habit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:1.5rem}
+  .habit-card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .15s}
+  .habit-card:hover{border-color:#a5b4fc}
+  .habit-card.checked{background:#dcfce7;border-color:#86efac}
+  .habit-card .h-icon{font-size:16px;margin-bottom:6px}
+  .habit-card .h-name{font-size:12px;font-weight:500}
+  .habit-card.checked .h-name{color:#16a34a}
+  .habit-card .h-time{font-size:11px;color:#9ca3af;margin-top:2px}
+  .estudo-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6}
+  .estudo-item:last-child{border-bottom:none}
+  .estudo-badge{font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;min-width:70px;text-align:center}
+  .badge-en{background:#dbeafe;color:#1d4ed8}
+  .badge-es{background:#dcfce7;color:#15803d}
+  .badge-hist{background:#fef3c7;color:#92400e}
+  .badge-fil{background:#ede9fe;color:#5b21b6}
+  .estudo-name{font-size:13px;flex:1}
+  .estudo-time{font-size:12px;color:#6b7280}
+  .estudo-check{width:18px;height:18px;border-radius:4px;border:1px solid #d1d5db;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;font-size:11px}
+  .estudo-check.checked{background:#dcfce7;border-color:#86efac;color:#16a34a}
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.5rem}
+  .sum-card{background:#f9fafb;border-radius:8px;padding:12px;text-align:center}
+  .sum-val{font-size:24px;font-weight:500}
+  .sum-label{font-size:11px;color:#6b7280;margin-top:2px}
+  .week-row{display:flex;gap:6px;margin-bottom:1rem}
+  .week-dot{width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#6b7280;background:#fff}
+  .week-dot.done{background:#dcfce7;border-color:#86efac;color:#16a34a}
+  .week-dot.today{border-color:#6366f1;color:#4338ca}
+  .section-label{font-size:12px;font-weight:500;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+  .aerobico-box{background:#f9fafb;border-radius:8px;padding:12px;margin-top:8px}
+  .aerobico-box p{font-size:13px;font-weight:500;margin-bottom:4px}
+  .aerobico-box span{font-size:12px;color:#6b7280}
+  @media(max-width:500px){.day-grid{grid-template-columns:repeat(7,1fr)}.day-card .day-treino{display:none}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>Minha rotina</h1>
+  <span id="today-label"></span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('treino')">Treino</button>
+  <button class="tab" onclick="switchTab('estudos')">Estudos</button>
+  <button class="tab" onclick="switchTab('habitos')">Hábitos</button>
+  <button class="tab" onclick="switchTab('semana')">Semana</button>
+</div>
+
+<div id="tab-treino" class="section active">
+  <p class="section-label">Selecione o dia</p>
+  <div class="day-grid" id="day-grid"></div>
+  <div id="treino-content"></div>
+</div>
+
+<div id="tab-estudos" class="section">
+  <p class="section-label">Estudos de hoje</p>
+  <div class="treino-box" id="estudos-content"></div>
+</div>
+
+<div id="tab-habitos" class="section">
+  <p class="section-label">Hábitos diários</p>
+  <div class="habit-grid" id="habitos-content"></div>
+</div>
+
+<div id="tab-semana" class="section">
+  <p class="section-label">Resumo da semana</p>
+  <div class="summary-grid">
+    <div class="sum-card"><div class="sum-val" id="sum-treinos">0</div><div class="sum-label">Treinos feitos</div></div>
+    <div class="sum-card"><div class="sum-val" id="sum-estudos">0</div><div class="sum-label">Estudos feitos</div></div>
+    <div class="sum-card"><div class="sum-val" id="sum-habitos">0%</div><div class="sum-label">Hábitos concluídos</div></div>
+  </div>
+  <p class="section-label">Dias da semana</p>
+  <div class="week-row" id="week-row"></div>
+</div>
+
+<script>
+const dias=[
+  {nome:"Seg",treino:"Treino A",tipo:"inferior"},
+  {nome:"Ter",treino:"Treino B",tipo:"superior"},
+  {nome:"Qua",treino:"Descanso",tipo:"descanso"},
+  {nome:"Qui",treino:"Treino C",tipo:"inferior"},
+  {nome:"Sex",treino:"Treino D",tipo:"superior"},
+  {nome:"Sáb",treino:"Aeróbico",tipo:"aerobico"},
+  {nome:"Dom",treino:"Descanso",tipo:"descanso"},
+];
+
+const treinos={
+  "Treino A":{
+    sub:"Segunda — Inferior + Aeróbico",
+    exercicios:[
+      {n:"Agachamento livre c/ barra ou halter",d:"3 séries × 12–15 rep — carga leve, foco na técnica"},
+      {n:"Leg Press 45°",d:"3 séries × 15 rep — aumentar carga a cada série"},
+      {n:"Cadeira Extensora",d:"3 séries × 12 + 10 bombas — saindo da inércia"},
+      {n:"Stiff c/ halter",d:"3 séries × 12 rep — foco no alongamento posterior"},
+      {n:"Banco Flexor",d:"3 séries × 12 rep — unilateral se possível"},
+      {n:"Elevação Pélvica c/ barra",d:"4 séries × 15 rep — rest pause 10\"+10"},
+      {n:"Afundo c/ halter",d:"3 séries × 10 p/ lado — passada larga"},
+      {n:"Panturrilha no Banco Sóleo",d:"3 séries × 15 + 10 curtos"},
+      {n:"Abdominal Canivete + Remador",d:"Tabata — 20\" on / 10\" off × 4 rodadas"},
+    ],
+    aerobico:"Esteira inclinada (10 min) + Elíptico ou bike (10 min) — 60–70% FC máx"
+  },
+  "Treino B":{
+    sub:"Terça — Superior: Ombros, Costas, Braços",
+    exercicios:[
+      {n:"Desenvolvimento c/ halter + Elevação Lateral",d:"4 séries × 12–15 — bi-set sem pausa"},
+      {n:"Elevação Frontal c/ halter",d:"3 séries × 12 rep"},
+      {n:"Remada Alta c/ halter",d:"3 séries × 12–15 — puxar até a altura do queixo"},
+      {n:"Puller Aberto (Pulley)",d:"3 séries × 12–15 — 2 normais + 3×10"},
+      {n:"Voador Inverso + Crucifixo Inverso",d:"4 séries × 12–15 — bi-set"},
+      {n:"Rosca Direta + Rosca Martelo c/ halter",d:"3 séries × 12–15 — bi-set"},
+      {n:"Tríceps Corda + Tríceps Francês Polia",d:"3 séries × 12–15 — bi-set"},
+      {n:"Flexão de Braço c/ apoio de joelhos",d:"3 séries × 10–12 rep"},
+    ],
+    aerobico:null
+  },
+  "Treino C":{
+    sub:"Quinta — Inferior: Glúteos, Adutores, Panturrilha",
+    exercicios:[
+      {n:"Banco Adutor + Agachamento Sumô c/ halter",d:"4 séries × 12+10 — bi-set"},
+      {n:"Búlgaro no banco c/ halter",d:"3 séries × 10 p/ lado — carga leve"},
+      {n:"Afundo c/ halter + Stiff c/ halter",d:"4 séries × 12 p/ lado + 12 — bi-set"},
+      {n:"Elevação Pélvica c/ barra",d:"4 séries × 15 rep — rest pause"},
+      {n:"Mesa Flexora",d:"3 séries × 10 p/ lado + bilateral até a falha"},
+      {n:"Panturrilha Máquina",d:"4 séries × 20 + 20 curtos"},
+      {n:"Abdominal Infra + Abdominal Bike",d:"Tabata — 20\" on / 10\" off × 4 rodadas"},
+    ],
+    aerobico:"Bike ergométrica (10 min) + Esteira trote leve (10 min) — 60–75% FC máx"
+  },
+  "Treino D":{
+    sub:"Sexta — Superior: Peito, Costas, Core",
+    exercicios:[
+      {n:"Supino c/ halter (reto ou inclinado)",d:"3 séries × 12–15 rep"},
+      {n:"Crucifixo c/ halter",d:"3 séries × 12 rep — amplitude progressiva"},
+      {n:"Remada Curvada c/ halter",d:"3 séries × 12 rep — coluna neutra"},
+      {n:"Puxada Frontal (Pulley)",d:"3 séries × 12–15 rep"},
+      {n:"Voador Peitoral",d:"3 séries × 12–15 — controle total"},
+      {n:"Rosca Concentrada c/ halter",d:"3 séries × 12 p/ lado"},
+      {n:"Tríceps Testa c/ halter",d:"3 séries × 12 rep — cotovelo fixo"},
+      {n:"Prancha Frontal",d:"3 séries × 30\" — progredir para 45\" e 60\""},
+      {n:"Abdominal Canivete + Bike",d:"Tabata — 20\" on / 10\" off × 4 rodadas"},
+    ],
+    aerobico:null
+  },
+  "Aeróbico":{
+    sub:"Sábado — Cardio leve a moderado",
+    exercicios:[
+      {n:"Caminhada rápida ao ar livre",d:"40 min — ritmo moderado"},
+      {n:"Bike ao ar livre ou ergométrica",d:"30–40 min — cadência constante"},
+      {n:"Funcional leve (circuito)",d:"30 min — 3 rodadas com 5 exercícios"},
+      {n:"Trilha ou caminhada na natureza",d:"45–60 min — recuperação ativa"},
+    ],
+    aerobico:"Escolha UMA das opções acima — 55–70% FC máx"
+  },
+};
+
+const estudosPorDia={
+  0:[{mat:"Inglês",badge:"badge-en",tempo:"45 min",rec:"Duolingo + Podcast"}],
+  1:[{mat:"Espanhol",badge:"badge-es",tempo:"45 min",rec:"Duolingo + conversação"}],
+  2:[],
+  3:[{mat:"Inglês",badge:"badge-en",tempo:"45 min",rec:"Duolingo + série"},{mat:"História",badge:"badge-hist",tempo:"30 min",rec:"Livro ou documentário"}],
+  4:[{mat:"Espanhol",badge:"badge-es",tempo:"45 min",rec:"Duolingo + conversação"},{mat:"Geografia",badge:"badge-hist",tempo:"30 min",rec:"Livro ou documentário"}],
+  5:[{mat:"Filosofia",badge:"badge-fil",tempo:"45 min",rec:"Leitura leve"}],
+  6:[],
+};
+
+const habitos=[
+  {nome:"Academia",icon:"💪",time:"06:15"},
+  {nome:"2L de água",icon:"💧",time:"ao longo do dia"},
+  {nome:"Proteína",icon:"🥗",time:"refeições"},
+  {nome:"Estudos",icon:"📚",time:"08:00"},
+  {nome:"Sem telas",icon:"📵",time:"antes de dormir"},
+  {nome:"Dormir até 23h",icon:"🌙",time:"23:00"},
+  {nome:"Leitura",icon:"📖",time:"noite"},
+];
+
+let state={
+  selectedDay: new Date().getDay()===0?6:new Date().getDay()-1,
+  checked:{},
+  estudosChecked:{},
+  habitosChecked:{},
+};
+
+const todayIdx=new Date().getDay()===0?6:new Date().getDay()-1;
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    const tabs=['treino','estudos','habitos','semana'];
+    b.classList.toggle('active',tabs[i]===t);
+  });
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='estudos') buildEstudos();
+  if(t==='habitos') buildHabitos();
+  if(t==='semana') updateSummary();
+}
+
+function buildDayGrid(){
+  const g=document.getElementById('day-grid');
+  g.innerHTML='';
+  dias.forEach((d,i)=>{
+    const t=treinos[d.treino];
+    const allChecked=t&&state.checked[i]&&t.exercicios.every((_,j)=>state.checked[i][j]);
+    const div=document.createElement('div');
+    div.className='day-card'+(i===state.selectedDay?' active':'')+(allChecked?' done':'');
+    div.innerHTML=`<div class="day-name">${d.nome}</div><div class="day-treino">${d.treino}</div><div class="done-dot"></div>`;
+    div.onclick=()=>{state.selectedDay=i;buildDayGrid();buildTreinoContent();};
+    g.appendChild(div);
+  });
+}
+
+function buildTreinoContent(){
+  const d=dias[state.selectedDay];
+  const c=document.getElementById('treino-content');
+  if(d.tipo==='descanso'){
+    c.innerHTML=`<div class="treino-box"><div class="treino-title">Descanso</div><div class="treino-sub">Recuperação ativa — alongamento, caminhada leve ou repouso completo.</div></div>`;
+    return;
+  }
+  const t=treinos[d.treino];
+  if(!t){c.innerHTML='';return;}
+  if(!state.checked[state.selectedDay]) state.checked[state.selectedDay]={};
+  const total=t.exercicios.length;
+  const done=t.exercicios.filter((_,i)=>state.checked[state.selectedDay][i]).length;
+  const pct=total>0?Math.round(done/total*100):0;
+  let html=`<div class="treino-box">
+    <div class="treino-title">${d.treino}</div>
+    <div class="treino-sub">${t.sub}</div>
+    <div class="progress-label">${done} de ${total} exercícios — ${pct}%</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>`;
+  t.exercicios.forEach((ex,i)=>{
+    const ck=state.checked[state.selectedDay][i];
+    html+=`<div class="ex-item${ck?' checked':''}" onclick="toggleEx(${i})">
+      <div class="ex-check${ck?' checked':''}">${ck?'✓':''}</div>
+      <div class="ex-info"><div class="ex-name">${ex.n}</div><div class="ex-detail">${ex.d}</div></div>
+    </div>`;
+  });
+  html+='</div>';
+  if(t.aerobico){
+    html+=`<div class="aerobico-box"><p>Aeróbico — 20 min</p><span>${t.aerobico}</span></div>`;
+  }
+  c.innerHTML=html;
+}
+
+function toggleEx(i){
+  if(!state.checked[state.selectedDay]) state.checked[state.selectedDay]={};
+  state.checked[state.selectedDay][i]=!state.checked[state.selectedDay][i];
+  buildTreinoContent();
+  buildDayGrid();
+}
+
+function buildEstudos(){
+  const lista=estudosPorDia[state.selectedDay]||[];
+  const c=document.getElementById('estudos-content');
+  if(lista.length===0){
+    c.innerHTML='<div class="treino-title" style="margin-bottom:4px">Sem estudos hoje</div><div class="treino-sub">Aproveite para revisar ou descansar a mente.</div>';
+    return;
+  }
+  c.innerHTML='<div class="treino-title" style="margin-bottom:12px">Matérias de hoje</div>'+lista.map((e,i)=>{
+    const ck=state.estudosChecked[state.selectedDay+'_'+i];
+    return `<div class="estudo-item">
+      <span class="estudo-badge ${e.badge}">${e.mat}</span>
+      <span class="estudo-name">${e.rec}</span>
+      <span class="estudo-time">${e.tempo}</span>
+      <div class="estudo-check${ck?' checked':''}" onclick="toggleEstudo(${i})">${ck?'✓':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEstudo(i){
+  const k=state.selectedDay+'_'+i;
+  state.estudosChecked[k]=!state.estudosChecked[k];
+  buildEstudos();
+}
+
+function buildHabitos(){
+  const c=document.getElementById('habitos-content');
+  const today=new Date().toDateString();
+  c.innerHTML=habitos.map((h,i)=>{
+    const k=today+'_'+i;
+    const ck=state.habitosChecked[k];
+    return `<div class="habit-card${ck?' checked':''}" onclick="toggleHabito(${i},'${today}')">
+      <div class="h-icon">${h.icon}</div>
+      <div class="h-name">${h.nome}</div>
+      <div class="h-time">${h.time}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHabito(i,today){
+  const k=today+'_'+i;
+  state.habitosChecked[k]=!state.habitosChecked[k];
+  buildHabitos();
+}
+
+function updateSummary(){
+  const treinosDone=Object.keys(state.checked).filter(d=>{
+    const t=treinos[dias[d].treino];
+    if(!t) return false;
+    return t.exercicios.length>0&&t.exercicios.every((_,i)=>state.checked[d][i]);
+  }).length;
+  const estudosDone=Object.values(state.estudosChecked).filter(Boolean).length;
+  const today=new Date().toDateString();
+  const habitosDone=habitos.filter((_,i)=>state.habitosChecked[today+'_'+i]).length;
+  const pctH=Math.round(habitosDone/habitos.length*100);
+  document.getElementById('sum-treinos').textContent=treinosDone;
+  document.getElementById('sum-estudos').textContent=estudosDone;
+  document.getElementById('sum-habitos').textContent=pctH+'%';
+  const wr=document.getElementById('week-row');
+  wr.innerHTML=dias.map((d,i)=>{
+    const t=treinos[d.treino];
+    const done=t&&state.checked[i]&&t.exercicios.every((_,j)=>state.checked[i][j]);
+    const isToday=i===todayIdx;
+    return `<div class="week-dot${done?' done':''}${isToday&&!done?' today':''}">${d.nome}</div>`;
+  }).join('');
+}
+
+const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+document.getElementById('today-label').textContent=days[new Date().getDay()]+', '+new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+
+buildDayGrid();
+buildTreinoContent();
+buildHabitos();
+</script>
+</body>
+</html>
